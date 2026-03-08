@@ -1,8 +1,9 @@
-name: Keep Supabase Alive
+name: Keep Supabase Projects Awake
 
 on:
   schedule:
     - cron: "*/30 * * * *"
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -10,7 +11,9 @@ jobs:
 
     steps:
       - name: Ping Supabase Project 1
-        run: curl https://xeguwajqiodghnensykt.supabase.co
-        name: Ping Supabase Project 2
-        run: curl https://hptogvxjoyrpzlriiryv.supabase.co
-         
+        run: |
+          curl -I https://hptogvxjoyrpzlriiryv.supabase.co || true
+
+      - name: Ping Supabase Project 2
+        run: |
+          curl -I https://xeguwajqiodghnensykt.supabase.co || true
