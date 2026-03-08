@@ -1,6 +1,6 @@
 name: Keep Supabase Alive
 
-on:
+"on":
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
@@ -13,38 +13,32 @@ jobs:
     steps:
       - name: Ping Supabase projects
         shell: bash
-        continue-on-error: true
+        env:
+          SUPABASE_URLS: |
+            https://hptogvxjoyrpzlriiryv.supabase.co
+            https://xeguwajqiodghnensykt.supabase.co
         run: |
-          set -u
+          set +e
 
-          urls=(
-            "https://hptogvxjoyrpzlriiryv.supabase.co"
-            "https://xeguwajqiodghnensykt.supabase.co"
-          )
+          echo "Starting Supabase keep-alive pings"
 
-          echo "Starting Supabase keep-alive pings (${#urls[@]} projects)"
+          while IFS= read -r url; do
+            if [[ -z "$url" ]]; then
+              continue
+            fi
 
-          for url in "${urls[@]}"; do
             project_host="${url#https://}"
             project_host="${project_host%/}"
 
-            echo "::group::Pinging ${project_host}"
-            echo "Sending HEAD request to ${url}"
+            echo "Pinging project: ${project_host}"
 
-            http_code="$(curl --head --location --silent --show-error \
+            http_code="$(curl --head --silent --show-error \
               --output /dev/null --write-out "%{http_code}" \
               --connect-timeout 10 --max-time 30 \
-              --retry 2 --retry-delay 2 --retry-all-errors \
-              --user-agent "supabase-keep-alive-github-action" \
-              "${url}" || true)"
+              "$url" || echo "000")"
 
-            if [[ -z "${http_code}" ]]; then
-              http_code="000"
-            fi
+            echo "HTTP status: ${http_code} (${project_host})"
+          done <<< "$SUPABASE_URLS"
 
-            echo "Result: ${project_host} -> HTTP ${http_code}"
-            echo "::endgroup::"
-          done
-
-          echo "Supabase keep-alive pings complete."
+          echo "Supabase keep-alive pings complete"
           exit 0
