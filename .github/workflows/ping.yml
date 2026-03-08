@@ -1,0 +1,16 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase Project 1
+        run: curl https://xeguwajqiodghnensykt.supabase.co
+        name: Ping Supabase Project 2
+        run: curl https://hptogvxjoyrpzlriiryv.supabase.co
+         
