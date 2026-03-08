@@ -8,19 +8,43 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Ping Supabase projects
         shell: bash
+        continue-on-error: true
         run: |
-          set +e
+          set -u
 
           urls=(
             "https://hptogvxjoyrpzlriiryv.supabase.co"
             "https://xeguwajqiodghnensykt.supabase.co"
           )
 
+          echo "Starting Supabase keep-alive pings (${#urls[@]} projects)"
+
           for url in "${urls[@]}"; do
-            http_code=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" "$url" || true)
-            echo "Pinged $url -> HTTP $http_code"
+            project_host="${url#https://}"
+            project_host="${project_host%/}"
+
+            echo "::group::Pinging ${project_host}"
+            echo "Sending HEAD request to ${url}"
+
+            http_code="$(curl --head --location --silent --show-error \
+              --output /dev/null --write-out "%{http_code}" \
+              --connect-timeout 10 --max-time 30 \
+              --retry 2 --retry-delay 2 --retry-all-errors \
+              --user-agent "supabase-keep-alive-github-action" \
+              "${url}" || true)"
+
+            if [[ -z "${http_code}" ]]; then
+              http_code="000"
+            fi
+
+            echo "Result: ${project_host} -> HTTP ${http_code}"
+            echo "::endgroup::"
           done
+
+          echo "Supabase keep-alive pings complete."
+          exit 0
